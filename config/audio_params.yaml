@@ -1,0 +1,7 @@
+sample_rate: 22050
+segment_duration_seconds: 8
+silence_top_db: 30
+n_mfcc: 20
+n_mels: 128
+hop_length: 512
+n_fft: 2048

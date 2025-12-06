@@ -1,0 +1,4 @@
+n_qubits: 8
+shots: 1024
+backend: "aer_simulator"
+pca_components: 8

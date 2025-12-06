@@ -1,0 +1,17 @@
+version: "3.9"
+
+services:
+  qsvm_api:
+    build: .
+    container_name: qsvm_audio_api
+    ports:
+      - "8000:8000"
+    environment:
+      # Définir QSVM_ADMIN_KEY si vous voulez protéger /train
+      # - QSVM_ADMIN_KEY=mon_secret_admin
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ./data:/app/data
+      - ./results:/app/results
+      - ./models:/app/models
+    restart: unless-stopped

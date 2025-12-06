@@ -1,0 +1,10 @@
+data:
+  raw_audio_dir: data/raw_audio
+  processed_audio_dir: data/processed_audio
+  datasets_dir: data/datasets
+  results_dir: results
+  models_dir: models
+  features_h5: results/features/extracted_features.h5
+
+logging:
+  log_dir: results/logs

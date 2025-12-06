@@ -1,0 +1,14 @@
+numpy
+scipy
+pandas
+scikit-learn
+librosa
+soundfile
+h5py
+qiskit
+fastapi
+uvicorn[standard]
+joblib
+matplotlib
+seaborn
+pytest

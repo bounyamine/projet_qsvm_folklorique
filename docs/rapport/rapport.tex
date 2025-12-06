@@ -1,0 +1,504 @@
+% Rapport sur le projet QSVM pour classification audio folklorique
+\documentclass[12pt,a4paper]{report}
+
+% Encodage et langue
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+
+% Mise en page
+\usepackage{geometry}
+\geometry{margin=2cm}
+\usepackage{setspace}
+\onehalfspacing
+
+% Maths et figures
+\usepackage{amsmath, amssymb}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{subcaption}
+
+% Liens
+\usepackage{hyperref}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=black,
+  urlcolor=blue,
+  citecolor=black,
+  pdfauthor={Auteur},
+  pdftitle={Utilisation du QSVM pour la classification audio folklorique}
+}
+
+% Autres
+\usepackage{csquotes}
+
+\begin{document}
+
+%------------------------
+% Page de titre
+%------------------------
+\begin{titlepage}
+  \centering
+  {\Large Rapport détaillé du projet\\[0.5cm]}
+  \vspace{1cm}
+  {\LARGE \textbf{UTILISATION DES SVM QUANTIQUES (QSVM) POUR LA CLASSIFICATION DES GENRES MUSICAUX FOLKLORIQUES CAMEROUNAIS…}\\[0.5cm]}
+  {\large \textit{Du son folklorique aux qubits : préserver la culture par l'informatique quantique}}\\[1.5cm]
+
+  {\large \textbf{Groupe 11} \\[0.2cm]}
+
+  \begin{table}[H]
+    \centering
+    \begin{tabular}{p{0.04\textwidth} p{0.4\textwidth} p{0.18\textwidth} p{0.32\textwidth}}
+        \toprule
+        \hline
+        \textbf{N°} & \textbf{Nom et prénom} & \textbf{Matricule} & \textbf{Option (Niveau)} \\
+        \hline
+        \midrule
+        01 & Bounyamine Ousmanou & 24ENSPM445 & Génie Logiciel (5)\\
+        02 & DADI GASTON ARSENE DARYLE & 22E0500EP & Génie Logiciel (4)\\
+        03 & KEMTSOP TETSAGHO JOEL & 24ENSPM515 & Sécurité et Cryptographie (4)\\
+        04 & MEFIRA MOHAMADOU & 24ENSPM0451 & Data Science (4)\\
+        05 & SOUWA MAHAMAT ABBA & 24ENSPM0525 & RTE (4)\\
+        \hline
+        \bottomrule
+    \end{tabular}
+  \end{table}\\[3cm]
+
+  {\large Examinateur : \textbf{Dr. NOUNAMO DABOU P.} \\[1.5cm]}
+
+  {\large Dernière mise à jour : \today}\\
+
+  \vfill
+
+  \begin{flushleft}
+  \textbf{Résumé}\\[0.2cm]
+  Ce rapport présente la conception et l'implémentation d'un pipeline complet pour la classification binaire de musique folklorique camerounaise (Gurna vs non-Gurna), en combinant traitement du signal audio, extraction de caractéristiques, SVM classique et QSVM avec encodage angulaire. Le système va du son brut jusqu'à une API REST déployable, et explore l'apport potentiel des noyaux quantiques pour ce type de données.
+  \end{flushleft}
+
+\end{titlepage}
+
+%------------------------
+% Table des matières
+%------------------------
+\tableofcontents
+\cleardoublepage
+
+%------------------------
+% Introduction
+%------------------------
+\chapter{Introduction}
+
+La musique folklorique joue un rôle central dans la transmission de la mémoire collective et de l'identité culturelle. Au Cameroun, les répertoires traditionnels comme le Gurna constituent un patrimoine immatériel précieux mais souvent peu documenté et menacé par la standardisation des productions musicales. Dans ce contexte, les outils d'intelligence artificielle offrent des moyens nouveaux pour analyser, classer et valoriser ces musiques.
+
+Parallèlement, l'essor de l'informatique quantique ouvre la voie à de nouveaux modèles d'apprentissage automatique, susceptibles d'exploiter des espaces de représentation de très grande dimension via des noyaux (\emph{kernels}) difficilement simulables classiquement. Les modèles de type \emph{Quantum Support Vector Machine} (QSVM) en sont un exemple emblématique.
+
+Ce projet vise à combiner ces deux dimensions -- préservation culturelle et IA quantique -- en développant un pipeline complet de classification audio folklorique camerounaise (Gurna vs non-Gurna) reposant à la fois sur un SVM classique et un QSVM basé sur un encodage angulaire des caractéristiques audio.
+
+Les contributions principales de ce travail sont les suivantes :
+\begin{itemize}
+  \item la conception d'un pipeline de bout en bout pour la classification binaire de fichiers audio folkloriques, depuis les signaux bruts jusqu'aux prédictions de classes ;
+  \item l'implémentation d'un module quantique pour calculer un noyau QSVM à partir d'un encodage angulaire des \emph{features} audio ;
+  \item la mise en place d'une comparaison expérimentale entre un SVM à noyau RBF classique et un QSVM ;
+  \item l'exposition du modèle via une API REST FastAPI et un environnement de déploiement par conteneurs Docker.
+\end{itemize}
+
+Le chapitre~\ref{chap:systeme} présente la vue d'ensemble de l'architecture et la tâche de classification. Le chapitre~\ref{chap:pretraitement} décrit le prétraitement audio. Le chapitre~\ref{chap:features} détaille l'extraction des caractéristiques. Le chapitre~\ref{chap:quantique} est consacré au coeur quantique et au QSVM. Le chapitre~\ref{chap:pipeline} décrit le pipeline d'entraînement, de prédiction et d'évaluation. Le chapitre~\ref{chap:api} discute l'API et le déploiement. Enfin, le chapitre~\ref{chap:discussion} propose une discussion critique et des perspectives, avant de conclure en chapitre~\ref{chap:conclusion}.
+
+%------------------------
+% Vue d'ensemble du système
+%------------------------
+\chapter{Vue d'ensemble du système}
+\label{chap:systeme}
+
+\section{Tâche de classification et jeu de données}
+
+Le problème étudié est une classification binaire de segments audio en deux classes :
+\begin{itemize}
+  \item classe 0 : musique folklorique de type Gurna ;
+  \item classe 1 : musique non-Gurna (autres répertoires).
+\end{itemize}
+
+Les signaux audio sont fournis sous forme de fichiers \texttt{wav} ou \texttt{mp3} organisés par répertoire de classe, par exemple :
+\begin{itemize}
+  \item \texttt{data/raw\_audio/gurna/*.wav}
+  \item \texttt{data/raw\_audio/non\_gurna/*.wav}
+\end{itemize}
+
+Chaque fichier contient un extrait musical, éventuellement bruité, de durée variable. Le pipeline transforme ces signaux bruts en segments normalisés, puis en vecteurs de caractéristiques utilisables par des modèles d'apprentissage supervisé.
+
+\section{Architecture logicielle générale}
+
+Le projet est structuré en plusieurs modules principaux :
+\begin{itemize}
+  \item \texttt{src/data\_pipeline} : prétraitement audio (chargement, suppression des silences, segmentation, normalisation, écriture des segments prétraités) ;
+  \item \texttt{src/feature\_extraction} : extraction de caractéristiques audio (MFCC, chroma, caractéristiques spectrales, tempo) puis réduction de dimension (StandardScaler + PCA) ;
+  \item \texttt{src/quantum\_module} : définition du noyau quantique via encodage angulaire et calcul de matrices de Gram ;
+  \item \texttt{src/models} : implémentation du QSVM (\texttt{QuantumSVM}) comme wrapper compatible scikit-learn autour de \texttt{SVC(kernel="precomputed")} ;
+  \item \texttt{src/pipeline} : orchestration globale du pipeline via la classe \texttt{AudioQSVMpipeline} (train / predict / evaluate) ;
+  \item \texttt{src/evaluation} : calcul des métriques (accuracy, précision, rappel, F1, ROC-AUC) et génération de visualisations (matrices de confusion, courbes ROC) ;
+  \item \texttt{api/} : API FastAPI exposant des endpoints de prédiction, information modèle et réentraînement ;
+  \item \texttt{config/*.yaml} : fichiers de configuration (chemins, paramètres audio, paramètres quantiques).
+\end{itemize}
+
+La commande d'entrée principale est le script \texttt{main.py}, qui permet de lancer le pipeline en trois modes~:
+\begin{itemize}
+  \item \texttt{mode = train} : prétraitement des données, extraction des features, entraînement des modèles SVM et QSVM ;
+  \item \texttt{mode = evaluate} : évaluation des modèles entraînés ;
+  \item \texttt{mode = predict} : prédiction sur un fichier audio donné.
+\end{itemize}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{figures/pipeline_global.pdf}
+  \caption{Schéma global du pipeline de classification audio folklorique (du son brut à l'API).}
+  \label{fig:pipeline-global}
+\end{figure}
+
+%------------------------
+% Prétraitement audio
+%------------------------
+\chapter{Prétraitement audio}
+\label{chap:pretraitement}
+
+Le prétraitement audio est implémenté dans le module \texttt{src/data\_pipeline/core.py} via la classe \texttt{AudioPreprocessor} et la structure de paramètres \texttt{PreprocessParams}.
+
+\section{Paramètres de prétraitement}
+
+Les principaux paramètres de prétraitement, chargés via \texttt{config/audio\_params.yaml}, sont :
+\begin{itemize}
+  \item la fréquence d'échantillonnage cible \texttt{sample\_rate} (par défaut 22~050~Hz) ;
+  \item la durée de segment \texttt{segment\_duration\_seconds} (par exemple 8 secondes) ;
+  \item le seuil de silence \texttt{silence\_top\_db} pour la suppression des silences ;
+  \item le niveau RMS cible \texttt{target\_rms} pour la normalisation du volume.
+\end{itemize}
+
+Ces paramètres sont encapsulés dans la dataclasse \texttt{PreprocessParams}, ce qui rend le prétraitement modulable et configurable.
+
+\section{Suppression des silences et segmentation}
+
+Pour chaque fichier audio d'entrée, le pipeline effectue les étapes suivantes :
+\begin{enumerate}
+  \item \textbf{Chargement et mise au format} : le signal est chargé en mono à la fréquence \texttt{sample\_rate} choisie, ce qui garantit une représentation homogène pour tous les fichiers.
+  \item \textbf{Normalisation RMS} : le niveau d'énergie du signal (RMS) est normalisé vers une valeur cible \texttt{target\_rms}, ce qui réduit l'impact des variations de volume entre enregistrements.
+  \item \textbf{Suppression des silences} : à l'aide de \texttt{librosa.effects.split}, le signal est découpé en intervalles non silencieux en fonction du seuil \texttt{silence\_top\_db}. Les segments silencieux sont éliminés.
+  \item \textbf{Segmentation en fenêtres de durée fixe} : les zones non silencieuses sont concaténées, puis découpées en segments de longueur fixe (par exemple 8 secondes). Les segments trop courts (moins de la moitié de la durée attendue) sont ignorés afin de conserver des entrées informatives.
+\end{enumerate}
+
+Chaque segment est ensuite sauvegardé dans \texttt{data/processed\_audio/<label>/} sous forme de fichier \texttt{wav}, ce qui permet de séparer clairement la phase de prétraitement de la suite du pipeline.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.8\textwidth]{figures/pretraitement.pdf}
+  \caption{Illustration du prétraitement : signal brut, extraction des zones non silencieuses, puis segmentation en fenêtres normalisées.}
+  \label{fig:pretraitement}
+\end{figure}
+
+%------------------------
+% Extraction de caractéristiques audio
+%------------------------
+\chapter{Extraction de caractéristiques audio}
+\label{chap:features}
+
+L'extraction des caractéristiques est assurée par la classe \texttt{FeatureExtractor} dans\\ \texttt{src/feature\_extraction/core.py}, associée à la dataclasse \texttt{FeatureParams}.
+
+\section{Caractéristiques extraites}
+
+Pour chaque segment prétraité, un ensemble riche de caractéristiques audio est extrait à l'aide de la bibliothèque \texttt{librosa}~:
+\begin{itemize}
+  \item \textbf{MFCC} (Mel-Frequency Cepstral Coefficients), de dimension \texttt{n\_mfcc} (par défaut 20) ;
+  \item \textbf{Chroma} (répartition de l'énergie par classe de hauteur) ;
+  \item \textbf{Spectral contrast} (contraste entre pics et vallées du spectre) ;
+  \item \textbf{Tonnetz} (représentation tonale) ;
+  \item \textbf{ZCR} (Zero Crossing Rate) ;
+  \item \textbf{RMS} (Root Mean Square) ;
+  \item \textbf{Spectral centroid}, \textbf{bandwidth}, \textbf{rolloff} (caractéristiques de forme du spectre) ;
+  \item \textbf{Tempo} (estimation globale du tempo).
+\end{itemize}
+
+Chaque caractéristique est initialement représentée sous forme de matrice temps--fréquence (par exemple dimension~\(\times\)~nombre de trames).
+
+\section{Agrégation temporelle et vecteur de features}
+
+Les matrices de caractéristiques sont ensuite agrégées en un vecteur de dimension fixe de la manière suivante~:
+\begin{itemize}
+  \item pour chaque caractéristique matricielle (MFCC, chroma, etc.), on calcule la moyenne et l'écart-type sur l'axe temporel ;
+  \item pour le tempo (scalaire), on conserve directement sa valeur ;
+  \item tous ces vecteurs sont concaténés pour former un vecteur final en une dimension (par segment).
+\end{itemize}
+
+Cette étape produit une représentation compacte mais informative des propriétés spectrales, tonales et rythmiques des segments Gurna et non-Gurna.
+
+\section{Standardisation et réduction de dimension (PCA)}
+
+L'ensemble des vecteurs de caractéristiques est ensuite normalisé et projeté dans un espace de dimension plus faible, adapté aux modèles SVM et QSVM :
+\begin{enumerate}
+  \item \textbf{Standardisation} : les features sont centrées-réduites (soustraction de la moyenne et division par l'écart-type). Les paramètres du scaler (moyenne, écart-type) sont sauvegardés.
+  \item \textbf{PCA (Principal Component Analysis)} : une PCA est appliquée pour réduire la dimension à un nombre de composantes spécifié dans \texttt{config/quantum\_params.yaml} (par exemple 8). Les composantes principales et la moyenne PCA sont également sauvegardées.
+\end{enumerate}
+
+Les données transformées, accompagnées des labels et des identifiants de fichiers, sont stockées dans un fichier HDF5, typiquement \texttt{results/features/extracted\_features.h5}. Ce fichier contient également les statistiques de scaling et de PCA nécessaires pour reproduire la même transformation en prédiction.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.7\textwidth]{figures/pca_features.pdf}
+  \caption{Visualisation des features projetés par PCA en 2D, illustrant la séparation entre segments Gurna et non-Gurna.}
+  \label{fig:pca}
+\end{figure}
+
+%------------------------
+% Coeur quantique et QSVM
+%------------------------
+\chapter{Coeur quantique et Quantum SVM}
+\label{chap:quantique}
+
+\section{Encodage angulaire des features}
+
+Le module \texttt{src/quantum\_module/core.py} implémente un noyau quantique basé sur un encodage angulaire des features dans un circuit quantique.
+
+Pour chaque vecteur de features réduit de dimension \(d\), on considère un nombre de qubits \(n_{\text{qubits}}\) (paramètre configurable). Si \(d\) est inférieur à \(n_{\text{qubits}}\), les features sont complétées par des zéros ; si \(d\) est supérieur, elles sont tronquées. Les valeurs sont ensuite normalisées dans l'intervalle \([-1, 1]\) et transformées en angles via une fonction de type \(2 \cdot \arcsin(\cdot)\).
+
+Sur chaque qubit \(i\), on applique une rotation \(RY(\theta_i)\), où \(\theta_i\) est l'angle obtenu pour la i-ème composante du vecteur. Le circuit quantique correspondant prépare ainsi un état \(|\varphi(x)\rangle\) qui encode les caractéristiques du segment audio.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.7\textwidth]{figures/angle_encoding.pdf}
+  \caption{Schéma conceptuel du circuit d'encodage angulaire : chaque qubit reçoit une rotation RY proportionnelle à une composante du vecteur de features.}
+  \label{fig:angle-encoding}
+\end{figure}
+
+\section{Définition du noyau quantique}
+
+Le noyau quantique entre deux vecteurs de features \(x_1\) et \(x_2\) est défini comme :
+\begin{equation}
+  K_q(x_1, x_2) = |\langle \varphi(x_1) \mid \varphi(x_2) \rangle|^2.
+\end{equation}
+
+Cette quantité est estimée expérimentalement via un circuit quantique composé de deux étapes d'encodage successives, suivies d'une mesure, et en observant la probabilité de mesurer l'état \(|0\ldots0\rangle\). Plus les états \(|\varphi(x_1)\rangle\) et \(|\varphi(x_2)\rangle\) sont proches, plus cette probabilité est élevée.
+
+À partir de cette définition, le module construit des matrices de Gram quantiques :
+\begin{itemize}
+  \item \(K_{\text{train}}\) (entraînement--entraînement) ;
+  \item \(K_{\text{test}}\) (test--entraînement) lorsque nécessaire.
+\end{itemize}
+
+\section{Implémentation du QSVM}
+
+Le module \texttt{src/models/quantum\_svm.py} fournit la classe \texttt{QuantumSVM}, qui encapsule :
+\begin{itemize}
+  \item une configuration \texttt{QuantumSVMConfig} (nombre de qubits, nombre de tirs \texttt{shots}, nom du backend Qiskit, paramètre de régularisation \(C\)) ;
+  \item un classifieur interne \texttt{SVC(kernel="precomputed", probability=true)} de scikit-learn ;
+  \item une copie des données d'entraînement dans l'espace projeté.
+\end{itemize}
+
+L'entraînement (\texttt{fit}) se déroule en deux étapes :
+\begin{enumerate}
+  \item calcul de la matrice de Gram quantique \(K_{\text{train}}\) sur les données d'entraînement ;
+  \item apprentissage du SVM avec ce noyau pré-calculé.
+\end{enumerate}
+
+Pour la prédiction (\texttt{predict}, \texttt{predict\_proba}), le modèle recalcule la matrice de Gram entre les points de test et les points d'entraînement, puis utilise le SVM interne pour produire les décisions ou probabilités.
+
+Les modèles QSVM sont sauvegardés sur disque via \texttt{joblib} (fichier \texttt{models/qsvm\_model.joblib}), contenant à la fois la configuration, le classifieur entraîné et les features d'entraînement.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.8\textwidth]{figures/svm_vs_qsvm.pdf}
+  \caption{Comparaison conceptuelle entre un SVM à noyau RBF classique et un QSVM à noyau quantique basé sur encodage angulaire.}
+  \label{fig:svm-qsvm}
+\end{figure}
+
+%------------------------
+% Pipeline complet
+%------------------------
+\chapter{Pipeline d'entraînement, de prédiction et d'évaluation}
+\label{chap:pipeline}
+
+L'orchestration de bout en bout est assurée par la classe \texttt{AudioQSVMpipeline} dans \texttt{src/pipeline/core.py}, configurée via les fichiers YAML du répertoire \texttt{config/}.
+
+\section{Chargement de la configuration}
+
+La classe \texttt{PipelineConfig} regroupe :
+\begin{itemize}
+  \item \texttt{paths} (chemins définis dans \texttt{config/paths.yaml}) : répertoires de données brutes, données prétraitées, modèles, résultats, etc. ;
+  \item \texttt{audio} (paramètres audio, \texttt{config/audio\_params.yaml}) ;
+  \item \texttt{quantum} (paramètres quantiques et PCA, \texttt{config/quantum\_params.yaml}).
+\end{itemize}
+
+Les chemins importants (données brutes, données prétraitées, fichier HDF5 de features, répertoire des modèles) sont dérivés automatiquement à partir de cette configuration.
+
+\section{Entraînement}
+
+La méthode \texttt{train()} suit la logique suivante :
+\begin{enumerate}
+  \item \textbf{Construction du dataset de features} : si le fichier HDF5 de features n'existe pas, le pipeline lance le prétraitement audio via \texttt{AudioPreprocessor.run\_full\_pipeline()} puis exécute l'extraction de caractéristiques et la PCA via \texttt{FeatureExtractor.build\_and\_save\_dataset()} ;
+  \item \textbf{Séparation des données} : les vecteurs de features sont séparés en ensembles entraînement / validation avec \texttt{train\_test\_split} en respectant la stratification des classes ;
+  \item \textbf{Entraînement du SVM RBF classique} : un modèle \texttt{SVC(kernel="rbf", probability=true)} est entraîné sur les données réduites. La performance sur l'ensemble de validation est mesurée (accuracy) et le modèle est sauvegardé sous \texttt{models/svm\_rbf\_model.joblib} ;
+  \item \textbf{Entraînement du QSVM} : si l'environnement quantique (Qiskit, backend) est disponible, un sous-échantillon du jeu d'entraînement (par exemple 50 exemples) est sélectionné pour rendre l'entraînement du QSVM praticable, puis une matrice de Gram quantique est calculée sur ce sous-ensemble et un SVM à noyau pré-calculé est entraîné. Le modèle QSVM est sauvegardé dans \texttt{models/qsvm\_model.joblib}.
+\end{enumerate}
+
+En l'absence de données audio (répertoire vide), un dataset synthétique est généré pour maintenir un pipeline fonctionnel, ce qui permet de tester les différentes briques sans jeu de données réel.
+
+\section{Prédiction}
+
+La méthode \texttt{predict(audio\_path)} prend en entrée le chemin d'un fichier audio et retourne un dictionnaire contenant :
+\begin{itemize}
+  \item le label et les probabilités prédites par le SVM RBF ;
+  \item le label et les probabilités prédites par le QSVM (si un modèle QSVM a été entraîné) ;
+  \item le nombre de segments exploités pour la prédiction.
+\end{itemize}
+
+Le flux de prédiction est le suivant :
+\begin{enumerate}
+  \item vérification de l'existence du dataset de features et du modèle SVM ;
+  \item prétraitement du fichier audio (suppression du silence, segmentation, normalisation) via \texttt{AudioPreprocessor.process\_file()} avec un label spécial (\_predict) ;
+  \item extraction des features pour chaque segment, en réutilisant les mêmes paramètres que pour l'entraînement ;
+  \item application du scaler et de la PCA à partir des statistiques sauvegardées dans le fichier HDF5 ;
+  \item prédiction pour chaque segment, puis agrégation via la moyenne des probabilités de classe sur l'ensemble des segments.
+\end{enumerate}
+
+\section{Évaluation}
+
+La méthode \texttt{evaluate()} évalue les modèles sur un sous-ensemble des données disponibles :
+\begin{itemize}
+  \item si un fichier de features audio est présent, les données sont séparées en train / test et :
+  \begin{itemize}
+    \item le SVM RBF est évalué sur l'ensemble de test ;
+    \item si le modèle QSVM est disponible, il est également évalué sur ce même ensemble ;
+  \end{itemize}
+  \item sinon, un dataset synthétique est utilisé pour évaluer au moins le SVM classique.
+\end{itemize}
+
+Les performances obtenues (par exemple \texttt{svm\_rbf\_accuracy}, \texttt{qsvm\_accuracy}) sont retournées sous forme de dictionnaire et peuvent être exploitées ensuite par le module \texttt{src/evaluation} pour produire des figures plus détaillées.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=1.05\textwidth]{figures/pipeline_modes.pdf}
+  \caption{Diagramme de flux du pipeline \texttt{AudioQSVMpipeline} montrant les différentes étapes pour les modes \texttt{train}, \texttt{predict} et \texttt{evaluate}.}
+  \label{fig:pipeline-modes}
+\end{figure}
+
+%------------------------
+% Evaluation et visualisation
+%------------------------
+\chapter{Évaluation et visualisation des résultats}
+\label{chap:evaluation}
+
+Le module \texttt{src/evaluation/core.py} propose la classe \texttt{ModelEvaluator} qui facilite l'analyse détaillée des performances des modèles.
+
+À partir des labels vrais \(y_{\text{true}}\), des prédictions \(y_{\text{pred}}\) et, si disponibles, des probabilités de classe \(y_{\text{proba}}\), le module :
+\begin{itemize}
+  \item calcule les métriques standard de classification binaire : accuracy, précision, rappel, F1, ROC-AUC ;
+  \item génère et sauvegarde la matrice de confusion (dans \texttt{results/evaluations/confusion\_matrices/}) ;
+  \item génère et sauvegarde la courbe ROC (dans \texttt{results/evaluations/roc\_curves/}).
+\end{itemize}
+
+Ces visualisations permettent notamment :
+\begin{itemize}
+  \item d'identifier les types d'erreurs les plus fréquentes (par exemple des Gurna confondus avec des non-Gurna) ;
+  \item de comparer la capacité discriminante des modèles en termes de compromis entre taux de vrais positifs et taux de faux positifs.
+\end{itemize}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.6\textwidth]{figures/cm_svm.pdf}
+  \caption{Matrice de confusion pour le SVM RBF (exemple).}
+  \label{fig:cm-svm}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.6\textwidth]{figures/cm_qsvm.pdf}
+  \caption{Matrice de confusion pour le QSVM (exemple).}
+  \label{fig:cm-qsvm}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.7\textwidth]{figures/roc_svm_qsvm.pdf}
+  \caption{Courbes ROC superposées du SVM RBF et du QSVM (exemple).}
+  \label{fig:roc-svm-qsvm}
+\end{figure}
+
+%------------------------
+% API et déploiement
+%------------------------
+\chapter{API REST et déploiement}
+\label{chap:api}
+
+\section{API FastAPI}
+
+Le module \texttt{api/app.py} définit une application FastAPI exposant plusieurs endpoints principaux :
+\begin{itemize}
+  \item \texttt{POST /predict} : reçoit un fichier audio en entrée et retourne les prédictions du SVM et, si disponible, du QSVM (labels et probabilités) ;
+  \item \texttt{GET /model\_info} : fournit des informations sur l'état des modèles (entraînés ou non) et quelques métriques de performance ;
+  \item \texttt{POST /train} : permet de relancer un entraînement des modèles à partir des données disponibles (potentiellement protégé par une clé API).
+\end{itemize}
+
+Un endpoint \texttt{GET /health} est également disponible pour vérifier simplement que l'API est en fonctionnement.
+
+L'API est documentée automatiquement via l'interface Swagger accessible sur \texttt{/docs} lorsqu'on lance le serveur FastAPI localement.
+
+\section{Conteneurisation et déploiement}
+
+Le projet inclut un \texttt{Dockerfile} et un fichier \texttt{docker-compose.yml} permettant de déployer facilement l'API et les modèles dans un environnement conteneurisé. Les volumes montés assurent la persistance des répertoires \texttt{data/}, \texttt{models/} et \texttt{results/} sur la machine hôte.
+
+Cette approche favorise :
+\begin{itemize}
+  \item la reproductibilité des expériences ;
+  \item la portabilité du service de classification vers différents environnements (local, serveur distant, cloud).
+\end{itemize}
+
+%------------------------
+% Discussion et perspectives
+%------------------------
+\chapter{Discussion et perspectives}
+\label{chap:discussion}
+
+Ce projet illustre la faisabilité d'un pipeline complet de classification de musique folklorique basé sur un QSVM. L'usage combiné de techniques classiques de traitement du signal audio, de modèles d'apprentissage supervisé (SVM RBF) et de noyaux quantiques offre un terrain d'expérimentation intéressant pour évaluer l'apport potentiel de l'informatique quantique dans un cas d'usage réel.
+
+Plusieurs points méritent toutefois une discussion critique :
+\begin{itemize}
+  \item \textbf{Qualité et taille du dataset} : la performance des modèles dépend fortement du nombre et de la diversité des enregistrements Gurna et non-Gurna. Un dataset trop restreint peut limiter la généralisation et favoriser le sur-apprentissage, en particulier pour le QSVM, qui est plus coûteux à entraîner.
+  \item \textbf{Coût de calcul du QSVM} : le calcul de la matrice de Gram quantique, même en simulation, est coûteux en temps de calcul. Dans ce projet, un sous-échantillon des données d'entraînement est utilisé pour rendre l'entraînement du QSVM praticable, ce qui limite potentiellement ses performances maximales.
+  \item \textbf{Choix du schéma d'encodage} : l'encodage angulaire utilisé ici est relativement simple. D'autres schémas d'encodage, plus complexes ou adaptés à des propriétés musicales spécifiques, pourraient capturer des structures plus riches dans les données.
+\end{itemize}
+
+Parmi les perspectives envisageables, on peut citer :
+\begin{itemize}
+  \item l'augmentation du dataset avec d'autres répertoires folkloriques camerounais ou d'autres régions du monde ;
+  \item l'exploration de feature maps quantiques plus expressives, éventuellement composées de plusieurs couches de portes et d'entanglement ;
+  \item le test du pipeline sur des machines quantiques réelles, au-delà de la simulation, afin d'étudier l'impact du bruit quantique sur les performances ;
+  \item l'intégration de ce système dans des applications de recommandation, d'indexation ou de valorisation de patrimoine musical.
+\end{itemize}
+
+%------------------------
+% Conclusion
+%------------------------
+\chapter{Conclusion}
+\label{chap:conclusion}
+
+Ce travail présente un pipeline complet pour la classification binaire de musique folklorique camerounaise, combinant un SVM classique et un QSVM basé sur un noyau quantique issu d'un encodage angulaire des caractéristiques audio. À partir de signaux bruts organisés par classe, le système met en oeuvre un prétraitement sophistiqué (suppression des silences, segmentation, normalisation), une extraction de caractéristiques riches (spectrales, tonales, rythmiques) et une réduction de dimension adaptée aux contraintes quantiques.
+
+L'implémentation du noyau quantique et du QSVM montre comment les circuits quantiques peuvent être intégrés dans un pipeline d'apprentissage automatique existant, avec une interface compatible scikit-learn. La comparaison expérimentale avec un SVM RBF fournit un premier point de repère pour évaluer l'intérêt et les limitations de cette approche quantique sur des données musicales réelles.
+
+Enfin, l'exposition de ce pipeline via une API FastAPI et la conteneurisation Docker rendent le système facilement déployable et réutilisable dans d'autres contextes. Au-delà de ce cas d'étude, ce projet constitue une base solide pour explorer plus largement l'apport des modèles quantiques dans l'analyse de données culturelles et multimédia.
+
+%------------------------
+% Bibliographie (à compléter)
+%------------------------
+\begin{thebibliography}{9}
+
+\bibitem{librosa}
+Brian McFee et al., ``librosa: Audio and music signal analysis in python'', \emph{Proceedings of the 14th python in science conference}, 2015.
+
+\bibitem{qiskit}
+H{\"a}ner, T., Steiger, D. S., Svore, K. M., 
+\emph{Qiskit: An Open-source Framework for Quantum Computing}, 2017.
+
+\bibitem{svm}
+Cortes, C., Vapnik, V., ``Support-vector networks'', \emph{Machine learning}, 20(3), 273--297, 1995.
+
+\end{thebibliography}
+
+\end{document}
