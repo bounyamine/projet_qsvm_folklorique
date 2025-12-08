@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import logging
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from api.endpoints import model_info, predict, train
 
@@ -27,6 +28,14 @@ app = FastAPI(
     version="0.1.0",
 )
 
+# Enable CORS for browser-based clients (adjust origins in production)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app.include_router(predict.router, tags=["prediction"])
 app.include_router(model_info.router, tags=["model_info"])
