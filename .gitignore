@@ -130,16 +130,17 @@ dmypy.json
 *~
 .DS_Store
 
-# # Project-specific
-# results/predictions/
-# results/models/
-# results/evaluations/
-# data/raw_audio/
+# Project-specific
+results/predictions/
+results/models/
+results/evaluations/
 data/processed_audio/
-# models/*.joblib
-# *.h5
-# .qiskit/
-# quantum_cache/
+.qiskit/
+quantum_cache/
+docs/rapport/*.out
+docs/rapport/*.log
+docs/rapport/*.aux
+docs/rapport/*.toc
 
 # Docker
 .dockerignore
