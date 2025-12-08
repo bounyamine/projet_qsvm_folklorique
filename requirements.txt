@@ -6,6 +6,7 @@ librosa
 soundfile
 h5py
 qiskit
+qiskit-aer
 fastapi
 uvicorn[standard]
 joblib
