@@ -24,7 +24,9 @@ def test_preprocessor_process_file(tmp_path: Path) -> None:
     _create_dummy_wav(src)
 
     params = PreprocessParams(segment_duration_seconds=0.5)
-    pre = AudioPreprocessor(raw_dir=tmp_path / "raw_audio", processed_dir=processed_dir, params=params)
+    pre = AudioPreprocessor(
+        raw_dir=tmp_path / "raw_audio", processed_dir=processed_dir, params=params
+    )
 
     out_paths = pre.process_file(src, label="gurna")
 

@@ -17,5 +17,5 @@ def test_pipeline_train_and_evaluate(tmp_path: Path) -> None:
     pipeline.train()
     metrics = pipeline.evaluate()
 
-    assert "accuracy" in metrics
-    assert 0.0 <= metrics["accuracy"] <= 1.0
+    assert "svm_rbf_accuracy" in metrics
+    assert 0.0 <= metrics["svm_rbf_accuracy"] <= 1.0

@@ -24,7 +24,6 @@ from sklearn.model_selection import train_test_split
 from sklearn.svm import SVC
 
 from src.data_pipeline.core import AudioPreprocessor, PreprocessParams
-from src.feature_extraction.core import FeatureExtractor, FeatureParams
 from src.models import QuantumSVM
 from src.models.quantum_svm import QuantumSVMConfig
 from src.pipeline.constants import LABEL_MAPPING
@@ -109,13 +108,17 @@ class AudioQSVMpipeline:
         with quantum_cfg_path.open("r", encoding="utf-8") as f:
             quantum_cfg: Dict[str, Any] = yaml.safe_load(f)
 
-        return PipelineConfig(root_dir=root_dir, paths=paths_cfg, audio=audio_cfg, quantum=quantum_cfg)
+        return PipelineConfig(
+            root_dir=root_dir, paths=paths_cfg, audio=audio_cfg, quantum=quantum_cfg
+        )
 
     # ------------------------------------------------------------------
     # Données synthétiques (fallback)
     # ------------------------------------------------------------------
     @staticmethod
-    def _generate_synthetic_dataset(n_samples: int = 300, n_features: int = 8) -> Tuple[np.ndarray, np.ndarray]:
+    def _generate_synthetic_dataset(
+        n_samples: int = 300, n_features: int = 8
+    ) -> Tuple[np.ndarray, np.ndarray]:
         """Génère un petit dataset de classification binaire synthétique.
 
         Args:
@@ -152,14 +155,18 @@ class AudioQSVMpipeline:
 
         # Vérifie qu'il y a des fichiers audio bruts
         if not self.raw_audio_dir.exists():
-            logger.warning("[Audio] Répertoire raw_audio inexistant : %s", self.raw_audio_dir)
+            logger.warning(
+                "[Audio] Répertoire raw_audio inexistant : %s", self.raw_audio_dir
+            )
             return False
 
         # Paramètres audio pour le prétraitement
         audio_cfg = self.config.audio
         pre_params = PreprocessParams(
             sample_rate=int(audio_cfg.get("sample_rate", 22050)),
-            segment_duration_seconds=float(audio_cfg.get("segment_duration_seconds", 8)),
+            segment_duration_seconds=float(
+                audio_cfg.get("segment_duration_seconds", 8)
+            ),
             silence_top_db=float(audio_cfg.get("silence_top_db", 30)),
         )
 
@@ -168,7 +175,9 @@ class AudioQSVMpipeline:
             processed_dir=self.processed_audio_dir,
             params=pre_params,
         )
-        logger.info("[Audio] Lancement du prétraitement audio (silence, segments, normalisation)…")
+        logger.info(
+            "[Audio] Lancement du prétraitement audio (silence, segments, normalisation)…"
+        )
         pre.run_full_pipeline()
 
         # Extraction de features + PCA
@@ -196,7 +205,9 @@ class AudioQSVMpipeline:
         """Charge X et y depuis le fichier HDF5 de features."""
 
         if not self.features_h5_path.exists():
-            raise FileNotFoundError(f"Fichier de features introuvable : {self.features_h5_path}")
+            raise FileNotFoundError(
+                f"Fichier de features introuvable : {self.features_h5_path}"
+            )
 
         with h5py.File(self.features_h5_path, "r") as f:
             X = np.array(f["X"], dtype=np.float32)
@@ -214,7 +225,8 @@ class AudioQSVMpipeline:
 
         if not self.svm_model_path.exists():
             raise RuntimeError(
-                f"Aucun modèle SVM trouvé à {self.svm_model_path}. Veuillez lancer le mode train d'abord."
+                f"Aucun modèle SVM trouvé à {self.svm_model_path}."
+                " Veuillez lancer le mode train d'abord."
             )
 
         self._svm_model = joblib.load(self.svm_model_path)
@@ -268,7 +280,9 @@ class AudioQSVMpipeline:
                 qcfg = QuantumSVMConfig(
                     n_qubits=int(self.config.quantum.get("n_qubits", 8)),
                     shots=int(self.config.quantum.get("shots", 1024)),
-                    backend_name=str(self.config.quantum.get("backend", "aer_simulator")),
+                    backend_name=str(
+                        self.config.quantum.get("backend", "aer_simulator")
+                    ),
                     C=1.0,
                 )
                 qsvm = QuantumSVM(config=qcfg)
@@ -278,19 +292,27 @@ class AudioQSVMpipeline:
                 X_train_q = X_train[:max_q_train]
                 y_train_q = y_train[:max_q_train]
 
-                logger.info("[Train] Entraînement QSVM sur un sous-ensemble des données…")
+                logger.info(
+                    "[Train] Entraînement QSVM sur un sous-ensemble des données…"
+                )
                 qsvm.fit(X_train_q, y_train_q)
                 y_pred_q = qsvm.predict(X_val)
                 acc_qsvm = accuracy_score(y_val, y_pred_q)
                 logger.info("[Train] Validation accuracy (QSVM audio) = %.3f", acc_qsvm)
 
                 qsvm.save(self.qsvm_model_path)
-                logger.info("[Train] Modèle QSVM sauvegardé dans %s", self.qsvm_model_path)
+                logger.info(
+                    "[Train] Modèle QSVM sauvegardé dans %s", self.qsvm_model_path
+                )
             except Exception as exc:  # pragma: no cover - dépend de Qiskit
-                logger.error("[Train] QSVM non entraîné (erreur Qiskit ou backend) : %s", exc)
+                logger.error(
+                    "[Train] QSVM non entraîné (erreur Qiskit ou backend) : %s", exc
+                )
         else:
             # Fallback synthétique pour garder un pipeline exécutable
-            logger.warning("[Train] Aucune donnée audio trouvée, utilisation d'un dataset synthétique.")
+            logger.warning(
+                "[Train] Aucune donnée audio trouvée, utilisation d'un dataset synthétique."
+            )
             X, y = self._generate_synthetic_dataset()
             X_train, X_val, y_train, y_val = train_test_split(
                 X, y, test_size=0.2, random_state=42, stratify=y
@@ -305,7 +327,9 @@ class AudioQSVMpipeline:
 
             joblib.dump(svm, self.svm_model_path)
             self._svm_model = svm
-            logger.info("[Train] Modèle SVM synthétique sauvegardé dans %s", self.svm_model_path)
+            logger.info(
+                "[Train] Modèle SVM synthétique sauvegardé dans %s", self.svm_model_path
+            )
 
     def predict(self, audio_path: str) -> Dict[str, Any]:
         """Prédit le label pour un fichier audio avec SVM RBF et QSVM.
@@ -345,7 +369,9 @@ class AudioQSVMpipeline:
         audio_cfg = self.config.audio
         pre_params = PreprocessParams(
             sample_rate=int(audio_cfg.get("sample_rate", 22050)),
-            segment_duration_seconds=float(audio_cfg.get("segment_duration_seconds", 8)),
+            segment_duration_seconds=float(
+                audio_cfg.get("segment_duration_seconds", 8)
+            ),
             silence_top_db=float(audio_cfg.get("silence_top_db", 30)),
         )
 
