@@ -17,7 +17,6 @@ from typing import Dict, Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
-import seaborn as sns
 from sklearn.metrics import (
     ConfusionMatrixDisplay,
     accuracy_score,

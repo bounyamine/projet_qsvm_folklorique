@@ -24,7 +24,7 @@ python main.py --config config/paths.yaml --mode evaluate
 Prédiction sur un fichier audio :
 
 ```bash
-python main.py --config config/paths.yaml --mode predict --audio data/raw_audio/gurna/mon_fichier.wav
+python main.py --config config/paths.yaml --mode predict --audio chemin/mon_fichier.wav
 ```
 
 ## Lancer l'API FastAPI (local)

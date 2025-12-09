@@ -71,7 +71,9 @@ class QuantumSVM:
         )
         K_train, _ = compute_quantum_gram_matrix(X, None, qcfg)
 
-        svc = SVC(kernel="precomputed", C=self.config.C, probability=True, random_state=42)
+        svc = SVC(
+            kernel="precomputed", C=self.config.C, probability=True, random_state=42
+        )
         svc.fit(K_train, y)
 
         self.svc_ = svc

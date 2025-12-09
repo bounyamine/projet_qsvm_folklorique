@@ -10,10 +10,7 @@ import librosa
 import numpy as np
 
 from .constants import (
-    CHROMA_DIM,
     MFCC_DIM,
-    SPECTRAL_CONTRAST_DIM,
-    TONNETZ_DIM,
 )
 from .utils import fit_scaler_pca, save_features_h5
 
@@ -59,15 +56,25 @@ class FeatureExtractor:
         hop = self.params.hop_length
         n_fft = self.params.n_fft
 
-        mfcc = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=self.params.n_mfcc, hop_length=hop, n_fft=n_fft)
+        mfcc = librosa.feature.mfcc(
+            y=y, sr=sr, n_mfcc=self.params.n_mfcc, hop_length=hop, n_fft=n_fft
+        )
         chroma = librosa.feature.chroma_stft(y=y, sr=sr, hop_length=hop, n_fft=n_fft)
-        spec_contrast = librosa.feature.spectral_contrast(y=y, sr=sr, hop_length=hop, n_fft=n_fft)
+        spec_contrast = librosa.feature.spectral_contrast(
+            y=y, sr=sr, hop_length=hop, n_fft=n_fft
+        )
         tonnetz = librosa.feature.tonnetz(y=y, sr=sr)
         zcr = librosa.feature.zero_crossing_rate(y=y, hop_length=hop)
         rms = librosa.feature.rms(y=y, hop_length=hop)
-        centroid = librosa.feature.spectral_centroid(y=y, sr=sr, hop_length=hop, n_fft=n_fft)
-        bandwidth = librosa.feature.spectral_bandwidth(y=y, sr=sr, hop_length=hop, n_fft=n_fft)
-        rolloff = librosa.feature.spectral_rolloff(y=y, sr=sr, hop_length=hop, n_fft=n_fft)
+        centroid = librosa.feature.spectral_centroid(
+            y=y, sr=sr, hop_length=hop, n_fft=n_fft
+        )
+        bandwidth = librosa.feature.spectral_bandwidth(
+            y=y, sr=sr, hop_length=hop, n_fft=n_fft
+        )
+        rolloff = librosa.feature.spectral_rolloff(
+            y=y, sr=sr, hop_length=hop, n_fft=n_fft
+        )
         tempo, _ = librosa.beat.beat_track(y=y, sr=sr)
 
         return {
@@ -106,7 +113,9 @@ class FeatureExtractor:
     # ------------------------------------------------------------------
     # API publique
     # ------------------------------------------------------------------
-    def extract_features_for_file(self, path: Path, label: int) -> Tuple[np.ndarray, int, str]:
+    def extract_features_for_file(
+        self, path: Path, label: int
+    ) -> Tuple[np.ndarray, int, str]:
         """Extrait un vecteur de features pour un segment.
 
         Args:
@@ -171,6 +180,8 @@ class FeatureExtractor:
             output_h5: Fichier HDF5 de sortie.
         """
 
-        X, y, file_ids = self.build_dataset_from_directory(processed_root, label_mapping)
+        X, y, file_ids = self.build_dataset_from_directory(
+            processed_root, label_mapping
+        )
         X_reduced, models = fit_scaler_pca(X, n_components=self.params.pca_components)
         save_features_h5(output_h5, X_reduced, y, file_ids, models)

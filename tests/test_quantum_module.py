@@ -8,20 +8,20 @@ Ils sont conditionnés à la présence de Qiskit.
 import numpy as np
 import pytest
 
-pytest.importorskip("qiskit")
-
 from src.quantum_module import angle_encoding_circuit, compute_quantum_gram_matrix
 from src.quantum_module.core import QuantumKernelConfig
 
 
-def test_angle_encoding_circuit_qubits():
+def test_angle_encoding_circuit_qubits() -> None:
+    pytest.importorskip("qiskit")
     x = np.random.randn(5)
     n_qubits = 4
     qc = angle_encoding_circuit(x, n_qubits)
     assert qc.num_qubits == n_qubits
 
 
-def test_quantum_gram_matrix_shapes():
+def test_quantum_gram_matrix_shapes() -> None:
+    pytest.importorskip("qiskit")
     X_train = np.random.randn(3, 4)
     X_test = np.random.randn(2, 4)
 

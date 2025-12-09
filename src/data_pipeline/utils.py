@@ -22,7 +22,9 @@ def write_wav(path: Path, y: np.ndarray, sr: int) -> None:
     sf.write(file=str(path), data=y, samplerate=sr)
 
 
-def iter_audio_files(root: Path, extensions: Iterable[str] = (".wav", ".mp3", ".flac")) -> List[Path]:
+def iter_audio_files(
+    root: Path, extensions: Iterable[str] = (".wav", ".mp3", ".flac")
+) -> List[Path]:
     """Retourne récursivement tous les fichiers audio sous un répertoire.
 
     Args:
@@ -34,8 +36,4 @@ def iter_audio_files(root: Path, extensions: Iterable[str] = (".wav", ".mp3", ".
     """
 
     exts = {e.lower() for e in extensions}
-    return [
-        p
-        for p in root.rglob("*")
-        if p.is_file() and p.suffix.lower() in exts
-    ]
+    return [p for p in root.rglob("*") if p.is_file() and p.suffix.lower() in exts]

@@ -150,3 +150,4 @@ docker-compose.override.yml
 Thumbs.db
 .DS_Store
 *.tmp
+bandit_report.json
