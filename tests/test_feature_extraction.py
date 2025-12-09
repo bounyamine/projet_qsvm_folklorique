@@ -19,9 +19,9 @@ def _create_dummy_wav(path: Path, sr: int = 22050, duration: float = 1.0) -> Non
 def test_feature_extraction_and_build_dataset(tmp_path: Path) -> None:
     processed_root = tmp_path / "processed_audio"
     gurna_dir = processed_root / "gurna"
-    wav_path = gurna_dir / "sample_seg000.wav"
-
-    _create_dummy_wav(wav_path)
+    for i in range(5):
+        wav_path = gurna_dir / f"sample_seg{i:03d}.wav"
+        _create_dummy_wav(wav_path)
 
     params = FeatureParams(sample_rate=22050, pca_components=4)
     extractor = FeatureExtractor(params=params)

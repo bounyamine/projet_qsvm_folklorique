@@ -13,12 +13,14 @@ def test_model_evaluator_generates_files(tmp_path: Path) -> None:
 
     y_true = np.array([0, 0, 1, 1])
     y_pred = np.array([0, 1, 1, 1])
-    y_proba = np.array([
-        [0.8, 0.2],
-        [0.4, 0.6],
-        [0.2, 0.8],
-        [0.1, 0.9],
-    ])
+    y_proba = np.array(
+        [
+            [0.8, 0.2],
+            [0.4, 0.6],
+            [0.2, 0.8],
+            [0.1, 0.9],
+        ]
+    )
 
     result = evaluator.evaluate_model(
         y_true=y_true,

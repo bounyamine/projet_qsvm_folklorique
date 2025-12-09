@@ -15,8 +15,7 @@ appliqué U(x1) puis U†(x2) sur |0...0⟩.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from functools import lru_cache
-from typing import Dict, Iterable, Optional, Tuple
+from typing import Dict, Optional, Tuple
 
 import numpy as np
 
@@ -44,7 +43,9 @@ def _get_backend(backend_name: str):
     try:
         backend = Aer.get_backend(backend_name)
     except Exception as exc:  # pragma: no cover - dépend de l'install Qiskit
-        raise RuntimeError(f"Impossible d'obtenir le backend Qiskit '{backend_name}': {exc}") from exc
+        raise RuntimeError(
+            f"Impossible d'obtenir le backend Qiskit '{backend_name}': {exc}"
+        ) from exc
     return backend
 
 
@@ -104,11 +105,13 @@ def _overlap_kernel_for_pair(
     """
 
     from qiskit import QuantumCircuit
+
     # `execute` a été déplacé / rendu indisponible dans certaines versions
     # récentes de Qiskit. On essaie un import direct, sinon on utilise
     # l'API moderne `backend.run(circuit, shots=...)`.
     try:
         from qiskit import execute  # type: ignore
+
         _HAS_QISKIT_EXECUTE = True
     except Exception:
         execute = None  # type: ignore
@@ -185,9 +188,13 @@ class QuantumGramComputer:
     """Calcul de matrices de Gram quantiques avec mémoisation simple."""
 
     config: QuantumKernelConfig
-    cache: Dict[Tuple[Tuple[float, ...], Tuple[float, ...]], float] = field(default_factory=dict)
+    cache: Dict[Tuple[Tuple[float, ...], Tuple[float, ...]], float] = field(
+        default_factory=dict
+    )
 
-    def _key(self, x1: np.ndarray, x2: np.ndarray) -> Tuple[Tuple[float, ...], Tuple[float, ...]]:
+    def _key(
+        self, x1: np.ndarray, x2: np.ndarray
+    ) -> Tuple[Tuple[float, ...], Tuple[float, ...]]:
         a = tuple(np.asarray(x1, dtype=float).ravel())
         b = tuple(np.asarray(x2, dtype=float).ravel())
         return (a, b) if a <= b else (b, a)

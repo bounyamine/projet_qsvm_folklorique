@@ -62,7 +62,9 @@ async def predict_endpoint(file: UploadFile = File(...)) -> PredictionResponse:
     qsvm_raw = raw_result.get("qsvm")
 
     if not svm_raw:
-        raise HTTPException(status_code=500, detail="Résultat SVM RBF manquant dans le pipeline.")
+        raise HTTPException(
+            status_code=500, detail="Résultat SVM RBF manquant dans le pipeline."
+        )
 
     svm_pred = ModelPrediction(**svm_raw)
     qsvm_pred = ModelPrediction(**qsvm_raw) if qsvm_raw is not None else None
